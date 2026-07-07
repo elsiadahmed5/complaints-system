@@ -53,7 +53,7 @@
     document.getElementById('complaintForm').onsubmit = function(e) {
         e.preventDefault();
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", "https://molde.freepage.cc/complaints/index.php", true);
+        xhr.open("POST", "https://molde.freepage.cc/cit/index.php", true);
         xhr.onload = function() { alert(xhr.responseText); };
         xhr.send(new FormData(this));
     };
