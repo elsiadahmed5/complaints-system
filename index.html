@@ -3,46 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <title>نظام الشكاوى الموحد</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+    
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
-        
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; background-color: #ffffff; border-bottom: 3px solid #28a745; }
-        .dept-right { text-align: right; }
-        .dept-left { text-align: left; font-size: 0.9em; color: #555; }
-        .dept-right h2 { margin: 0; color: #004a99; font-size: 1.4em; }
-        .dept-right p { margin: 5px 0 0; color: #333; font-weight: bold; }
-        
-        .container { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background-color: #004a99; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; font-weight: bold; }
-        button:hover { background-color: #003366; }
+        /* الجزء الخاص بـ CSS */
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .step { display: none; }
+        .active { display: block; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #004a99; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #003366; }
+        .warning { color: red; font-size: 0.9em; border: 1px solid red; padding: 10px; margin: 10px 0; border-radius: 5px; background: #fff0f0; }
+        h2 { text-align: center; color: #004a99; }
     </style>
 </head>
 <body>
 
-    <header class="header">
-        <div class="dept-right">
-            <h2>وزارة التنمية المحلية والبيئة</h2>
-            <p>الإدارة العامة لخدمة المواطنين</p>
+<div class="container">
+    <h2>نظام الشكاوى الموحد</h2>
+    <form id="complaintForm" action="https://molde.freepage.cc/Citizens' complaints/index.php" method="POST" enctype="multipart/form-data">
+        
+        <div id="step1" class="step active">
+            <input type="text" name="name" placeholder="الاسم الرباعي" required>
+            <input type="tel" name="phone" placeholder="رقم التليفون" required>
+            <div class="warning"><strong>تحذير:</strong> في حالة كيدية الشكوى سيتم اتخاذ الإجراءات القانونية ضد الشاكي.</div>
+            <button type="button" onclick="nextStep()">التالي</button>
         </div>
-        <div class="dept-left">
-            الإدارة المركزية لنظم المعلومات<br>والتحول الرقمي
-        </div>
-    </header>
 
-    <div class="container">
-        <h2 style="text-align: center;">نموذج تسجيل شكوى</h2>
-        <form id="complaintForm">
-            <input type="text" name="citizen_name" placeholder="الاسم الرباعي" required>
+        <div id="step2" class="step">
+            <textarea name="details" placeholder="مضمون الشكوى" required></textarea>
+            <input type="text" name="location" placeholder="عنوان محل المخالفة" required>
             <select name="category">
-                <option value="تعديات">بلاغ عن تعديات</option>
-                <option value="قمامة">بلاغ عن تراكم قمامة</option>
+                <option value="قمامة">قمامة</option>
+                <option value="اشغالات">إشغالات</option>
+                <option value="تعديات_دولة">تعديات على أملاك الدولة</option>
+                <option value="تعديات_زراعية">تعديات على الأراضي الزراعية</option>
+                <option value="مخالفات_بناء">مخالفات بناء</option>
+                <option value="اخرى">أخرى</option>
             </select>
-            <label>إرفاق صورة الرقم القومي:</label>
-            <input type="file" name="id_image" required>
+            <label>إرفاق صورة الرقم القومي / صورة المخالفة:</label>
+            <input type="file" id="imageInput" name="id_image" accept="image/*" required>
+            
+            <input type="hidden" name="lat" id="lat">
+            <input type="hidden" name="lng" id="lng">
+            <input type="hidden" name="image_metadata" id="image_metadata">
+            
             <button type="submit">إرسال الشكوى</button>
-        </form>
-    </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    /* الجزء الخاص بـ JavaScript */
+    function nextStep() {
+        // التحقق من تفعيل الـ GPS
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                document.getElementById('lat').value = pos.coords.latitude;
+                document.getElementById('lng').value = pos.coords.longitude;
+                // الانتقال للخطوة التالية فقط بعد الحصول على الموقع
+                document.getElementById('step1').classList.remove('active');
+                document.getElementById('step2').classList.add('active');
+            }, (err) => {
+                alert("يرجى تفعيل خدمة الـ GPS لتتمكن من إرسال الشكوى.");
+            }, { enableHighAccuracy: true, timeout: 10000 });
+        } else {
+            alert("متصفحك لا يدعم خاصية تحديد الموقع.");
+        }
+    }
+
+    // استخراج البيانات المخفية من الصورة (Metadata)
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+        let file = e.target.files[0];
+        if (file) {
+            EXIF.getData(file, function() {
+                let tags = EXIF.getAllTags(this);
+                document.getElementById('image_metadata').value = JSON.stringify(tags);
+            });
+        }
+    });
+</script>
 
 </body>
 </html>
